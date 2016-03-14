@@ -1,0 +1,203 @@
+<html>
+    <head>
+        <script src="js/three.min.js"></script>
+		<script src="js/OBJMTLLoader.js"></script>
+		<script src="js/MTLLoader.js"></script>
+    </head>
+    <body>
+ 
+         <div id='animation'
+             style='width:auto;height:auto'>
+			<div id="loading" style="position:absolute;width:100%;text-align:center;top:10%;color:white;font-family:verdana;font-size:1.5em;background-color:rgba(0,0,0,0)">Loading ... </div>
+			 
+			 </div> 
+        
+        <script type="text/javascript">
+            // define variables 
+            var camera, scene, renderer;
+            var sphere;
+			var origin;
+			var stars;
+			var starsOrigin;
+			var moonOrigin;
+			var cameraSpeed = 0.00001;
+			var cameraSpeed2 = 0.00002;
+			var play = true;
+			
+			
+			 function init() {
+                //loader manager
+                var manager = new THREE.LoadingManager();
+                manager.onProgress = function(item, loaded, total) {
+                    if (loaded == total)
+                    {
+                        var loading = document.getElementById("loading");
+                       loading.style.display = "none";
+                        animate();
+                    }
+                };
+				
+				
+                var panel = document.getElementById("animation");
+                
+            
+                renderer = new THREE.WebGLRenderer();
+                renderer.setSize(window.innerWidth, window.innerHeight); 
+				renderer.setClearColor(0x000000);  
+
+				
+				var canvas = renderer.domElement;
+                panel.appendChild(canvas);
+                
+                  
+                //********** Camera *********// 
+                //aspect ratio
+                var panelAspectRatio = window.innerWidth / window.innerHeight;              
+                //Perspective camera
+                camera = new THREE.PerspectiveCamera(30, panelAspectRatio, 1, 3500000);               
+                //position
+                camera.position.set(30005,350.5,1);
+                //look at
+                camera.lookAt(new THREE.Vector3(0,0,0));
+                //camera object
+				cameraOrigin  = new THREE.Object3D();
+				cameraOrigin.add(camera);
+                
+                // ******* Light Source *********//
+				
+				var ambient = new THREE.AmbientLight(0x101010);
+				
+                var pointLight = new THREE.PointLight( 0xffffff,1.0,300000);
+                pointLight.position.set(150000,0,0);
+			
+				
+				// ********* Earth *********** //
+				var sphereGeometry = new THREE.SphereGeometry( 1300, 150, 150 );
+				var earth = new THREE.ImageUtils.loadTexture("images/earth.jpg");
+				var earthBump = new THREE.ImageUtils.loadTexture("images/earthBump.jpg");
+				var earthSpecular   = new THREE.ImageUtils.loadTexture('images/earthSpecular.jpg');
+				var specularMaterial = new THREE.Color('0x010101');
+				var sphereMaterial = new THREE.MeshPhongMaterial({map:earth, bumpMap: earthBump, bumpScale: 15, specularMap: earthSpecular, color: 0xffffff, specular: 0xffffff, shininess: 3.5});
+				var sphere = new THREE.Mesh( sphereGeometry, sphereMaterial, specularMaterial);
+				
+				sphere.position.set(0,0,0); 
+				sphere.rotation.set(0,0,0);
+				
+				origin  = new THREE.Object3D();
+				origin.add(sphere);
+				 
+				origin2  = new THREE.Object3D();
+				origin2.add(origin);
+				
+				// ********* Moon *********** //
+				var moonGeometry = new THREE.SphereGeometry( 350, 150, 150 );
+				var moon = new THREE.ImageUtils.loadTexture("images/moon.jpg");
+				var moonMaterial = new THREE.MeshPhongMaterial({map:moon, color: 0xffffff, specular: 0xffffff, shininess: 1});
+				var sphereMoon = new THREE.Mesh( moonGeometry, moonMaterial );
+				
+				sphereMoon.position.set(30000,0,0); 
+				sphereMoon.rotation.set(0.5,4,0);
+				 
+				 moonOrigin  = new THREE.Object3D();
+				 moonOrigin.add(sphereMoon);
+				  
+				//*******************astronaut*****************///
+				  var loader1 = new THREE.OBJMTLLoader(manager);
+                loader1.load('models/astronaut.obj', 'models/astronaut.mtl',
+                 function(object) {
+                    astronaut = object;
+                    astronaut.rotation.x = 0;
+					astronaut.rotation.z = 0;
+					astronaut.rotation.y = 2;
+					astronaut.position.y = 350;
+                    astronaut.scale.set(0.00035,0.00035,0.00035);
+					astronaut.position.z = 0;
+					astronaut.position.x = 30000;
+					//add astronaut to the Moon
+                    moonOrigin.add(astronaut);
+                });
+				 
+				//***** Stars ********* 
+                var backgroundGeometry = new THREE.SphereGeometry(3000000, 10, 10);
+				var starsTexture = new THREE.ImageUtils.loadTexture("images/stars.jpg");
+				var backgroundMaterial = new THREE.MeshBasicMaterial({map: starsTexture, color: 0x606060,side: THREE.DoubleSide});
+				var stars = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+                stars.position.set(0, 0, 0);
+				
+				starsOrigin  = new THREE.Object3D();
+				starsOrigin.add(stars);
+				
+                 
+                //********* Scene ***********//
+                //scene is a reference to a Scene object
+                scene = new THREE.Scene();
+              
+                scene.add(cameraOrigin); 
+               
+				scene.add(ambient);
+                scene.add(pointLight);
+				scene.add(origin);
+				scene.add(origin2);
+				scene.add(starsOrigin);
+				scene.add(moonOrigin);
+				
+                // ******** render the scene ***********
+   				animate();
+            }
+			     
+				//*****pause on keypress***//	 
+				document.addEventListener("keyup",function(event){
+                console.log(String.fromCharCode(event.keyCode));
+                if(String.fromCharCode(event.keyCode) === ' ')
+                {
+                    play = !play;
+                }
+            }, true);		
+			
+			
+			
+            // animate function executed with each screen refresh
+			function animate()
+			{
+			// execute the function animate at the next screen refresh
+			window.requestAnimationFrame(animate);
+			// execute render function
+			render();
+			}
+
+			// render the scene
+			function render()
+			{
+			// pause and play
+			if(play){
+			origin.rotation.y += 0.027;
+			origin2.rotation.z = 0.4;
+			moonOrigin.rotation.y += 0.001;
+			starsOrigin.rotation.y += 0.0001;
+			//camera moves
+			if (cameraOrigin.position.y < 2400)
+			{
+			cameraOrigin.rotation.y += 0.001;
+			if (cameraOrigin.rotation.y > 0.008)
+				{
+				cameraOrigin.position.x -= cameraSpeed;		
+				cameraOrigin.position.z += cameraSpeed2;
+				cameraSpeed += cameraSpeed * 0.0045;
+				cameraSpeed2 -= cameraSpeed * 0.0045;
+				}
+			if (cameraSpeed > 7.5)
+				{
+				cameraOrigin.position.x += cameraSpeed;
+				cameraOrigin.position.z -= cameraSpeed2;
+				cameraOrigin.position.y += 1;
+				}
+			}
+			}
+     	
+			renderer.render(scene, camera);
+            }
+            window.onload = init;
+            window.onresize = function(){renderer.render(scene, camera);};
+        </script>
+    </body>
+</html>
